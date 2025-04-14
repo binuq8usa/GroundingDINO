@@ -49,6 +49,17 @@ def load_image(image_path: str) -> Tuple[np.array, torch.Tensor]:
     image_transformed, _ = transform(image_source, None)
     return image, image_transformed
 
+def load_image_from_array(image_array: np.array) -> Tuple[np.array, torch.Tensor]:
+    transform = T.Compose(
+        [
+            T.RandomResize([800], max_size=1333),
+            T.ToTensor(),
+            T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
+    image_source = Image.fromarray(image_array)
+    image_transformed, _ = transform(image_source, None)
+    return image_array, image_transformed
 
 def predict(
         model,
