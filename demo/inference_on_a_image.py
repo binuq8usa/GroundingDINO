@@ -24,6 +24,8 @@ def plot_boxes_to_image(image_pil, tgt):
     mask = Image.new("L", image_pil.size, 0)
     mask_draw = ImageDraw.Draw(mask)
 
+    list_of_boxes = []
+
     # draw boxes and masks
     for box, label in zip(boxes, labels):
         # from 0..1 to 0..W, 0..H
@@ -52,7 +54,9 @@ def plot_boxes_to_image(image_pil, tgt):
 
         mask_draw.rectangle([x0, y0, x1, y1], fill=255, width=6)
 
-    return image_pil, mask
+        list_of_boxes.append([x0, y0, x1 - x0, y1 - y0])
+
+    return image_pil, mask, list_of_boxes
 
 
 def load_image(image_path):
@@ -210,5 +214,24 @@ if __name__ == "__main__":
         "labels": pred_phrases,
     }
     # import ipdb; ipdb.set_trace()
-    image_with_box = plot_boxes_to_image(image_pil, pred_dict)[0]
-    image_with_box.save(os.path.join(output_dir, "pred.jpg"))
+    image_with_box, mask,list_of_boxes  = plot_boxes_to_image(image_pil, pred_dict) # get the list of boxes
+
+    from pathlib import Path
+    result_image_path = Path(output_dir) / f"{Path(image_path).stem}_pred_{text_prompt}.jpg"
+    print(f"Saving the result image to {result_image_path}")
+    image_with_box.save(result_image_path)
+
+    # save the list of boxes to a text file
+    result_txt_path = Path(output_dir) / f"{Path(image_path).stem}_pred.txt"
+    print(f"Saving the list of boxes to {result_txt_path}")
+
+    # append to a json file
+    list_of_boxes = np.array(list_of_boxes, dtype=np.float32).tolist()  # convert to float32 for json serialization
+    result_json_path = Path(output_dir) / f"{Path(image_path).stem}_pred.json"
+    import json
+
+    # append to existing file if one exists
+    with open(result_txt_path, "a") as f:
+        for idx, box in enumerate(list_of_boxes):
+            # write float values
+            f.write(f"{box[0]:.2f},{box[1]:.2f},{box[2]:.2f},{box[3]:.2f}, {pred_phrases[idx]}\n")
